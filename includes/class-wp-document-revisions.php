@@ -814,16 +814,24 @@ class WP_Document_Revisions {
 		$disposition = ( apply_filters( 'document_content_disposition_inline', true ) ) ? 'inline' : 'attachment';
 		@header( 'Content-Disposition: ' . $disposition . '; filename="' . $filename . '"' );
 
-		// filetype and length
-		@header( 'Content-Type: ' . $mimetype ); // always send this
-		@header( 'Content-Length: ' . filesize( $file ) );
+		// WSU Hotfix for S3 uploads
+		// See https://github.com/washingtonstateuniversity/wp-document-revisions/pull/7
+		// Add content type and length headers if the file is being served via
+		// S3 stream. If not, then we allow the web server to set the permissions.
+		if ( 0 === strpos( $file, 's3://', 0 ) ) {
+			@header( 'Content-Type: ' . $mimetype );
+			@header( 'Content-Length: ' . filesize( $file ) );
+		}
 
 		// modified
 		$last_modified = gmdate( 'D, d M Y H:i:s', filemtime( $file ) );
 		$etag = '"' . md5( $last_modified ) . '"';
 		@header( "Last-Modified: $last_modified GMT" );
 		@header( 'ETag: ' . $etag );
-		@header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + 100000000 ) . ' GMT' );
+
+		// WSU Hotfix
+		// See https://github.com/washingtonstateuniversity/wp-document-revisions/pull/2
+		// @header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + 100000000 ) . ' GMT' );
 
 		// Support for Conditional GET
 		$client_etag = isset( $_SERVER['HTTP_IF_NONE_MATCH'] ) ? stripslashes( $_SERVER['HTTP_IF_NONE_MATCH'] ) : false;

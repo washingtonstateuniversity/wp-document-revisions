@@ -791,18 +791,6 @@ class WP_Document_Revisions {
 		// We may override this later.
 		status_header( 200 );
 
-		// rest inspired by wp-includes/ms-files.php.
-		$mime = wp_check_filetype( $file );
-		if ( false === $mime['type'] && function_exists( 'mime_content_type' ) ) {
-			$mime['type'] = mime_content_type( $file );
-		}
-
-		if ( $mime['type'] ) {
-			$mimetype = $mime['type'];
-		} else {
-			$mimetype = 'image/' . substr( $file, strrpos( $file, '.' ) + 1 );
-		}
-
 		// fake the filename
 		$filename = $post->post_name;
 		$filename .= ( '' === $version ) ? '' : __( '-revision-', 'wp-document-revisions' ) . $version;
@@ -818,14 +806,38 @@ class WP_Document_Revisions {
 		$disposition = ( apply_filters( 'document_content_disposition_inline', true ) ) ? 'inline' : 'attachment';
 		@header( 'Content-Disposition: ' . $disposition . '; filename="' . $filename . '"' );
 
-		// WSU Hotfix for S3 uploads
-		// See https://github.com/washingtonstateuniversity/wp-document-revisions/pull/7
-		// Add content type and length headers if the file is being served via
-		// S3 stream. If not, then we allow the web server to set the permissions.
-		if ( 0 === strpos( $file, 's3://', 0 ) ) {
-			@header( 'Content-Type: ' . $mimetype );
-			@header( 'Content-Length: ' . filesize( $file ) );
+		/**
+		 * Filters the MIME type for a file before it is processed by WP Document Revisions.
+		 *
+		 * If filtered to `false`, no `Content-Type` header will be set by the plugin.
+		 *
+		 * If filtered to a string, that value will be set for the `Content-Type` header.
+		 *
+		 * @param null|bool|string $mimetype The MIME type for a given file.
+		 * @param string           $file     The file being served.
+		 */
+		$mimetype = apply_filters( 'document_revisions_mimetype', null, $file );
+
+		if ( is_null( $mimetype ) ) {
+			// inspired by wp-includes/ms-files.php.
+			$mime = wp_check_filetype( $file );
+			if ( false === $mime['type'] && function_exists( 'mime_content_type' ) ) {
+				$mime['type'] = mime_content_type( $file );
+			}
+
+			if ( $mime['type'] ) {
+				$mimetype = $mime['type'];
+			} else {
+				$mimetype = 'image/' . substr( $file, strrpos( $file, '.' ) + 1 );
+			}
 		}
+
+		// Set the Content-Type header if a mimetype has been detected or provided.
+		if ( is_string( $mimetype ) ) {
+			@header( 'Content-Type: ' . $mimetype );
+		}
+
+		@header( 'Content-Length: ' . filesize( $file ) );
 
 		// modified
 		$last_modified = gmdate( 'D, d M Y H:i:s', filemtime( $file ) );
@@ -1177,6 +1189,11 @@ class WP_Document_Revisions {
 		}
 
 		$post = get_post( $documentish );
+
+		if ( ! $post ) {
+			return false;
+		}
+
 		$post_type = $post->post_type;
 
 		// if post is really an attachment or revision, look to the post's parent

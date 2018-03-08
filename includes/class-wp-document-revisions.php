@@ -856,9 +856,11 @@ class WP_Document_Revisions {
 		@header( "Last-Modified: $last_modified GMT" );
 		@header( 'ETag: ' . $etag );
 
-		// WSU Hotfix
-		// See https://github.com/washingtonstateuniversity/wp-document-revisions/pull/2
-		// @header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + 100000000 ) . ' GMT' );
+		/*
+		 * WSU Hotfix
+		 * See https://github.com/washingtonstateuniversity/wp-document-revisions/pull/2
+		 * @header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + 100000000 ) . ' GMT' );
+		 */
 
 		// Support for Conditional GET
 		$client_etag = isset( $_SERVER['HTTP_IF_NONE_MATCH'] ) ? stripslashes( $_SERVER['HTTP_IF_NONE_MATCH'] ) : false;

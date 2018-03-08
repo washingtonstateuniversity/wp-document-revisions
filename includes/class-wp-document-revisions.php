@@ -1890,8 +1890,8 @@ class WP_Document_Revisions {
 	 * Return an empty excerpt for documents on front end views to avoid leaking
 	 * revision notes.
 	 *
-	 * @param string  $excerpt
-	 * @param WP_Post $post
+	 * @param string  $excerpt The original excerpt text associated with a post.
+	 * @param WP_Post $post    The post object.
 	 *
 	 * @return string
 	 */

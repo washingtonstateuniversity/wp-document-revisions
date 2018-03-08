@@ -98,6 +98,8 @@ class WP_Document_Revisions {
 		add_action( 'init', array( &$this, 'edit_flow_support' ), 11 );
 		add_action( 'init', array( &$this, 'use_workflow_states' ), 50 );
 
+		add_filter( 'get_the_excerpt', array( $this, 'empty_excerpt_return' ), 10, 2 );
+
 		// load front-end features (shortcode, widgets, etc.)
 		include dirname( __FILE__ ) . '/class-wp-document-revisions-front-end.php';
 		new WP_Document_Revisions_Front_End( $this );
@@ -853,9 +855,11 @@ class WP_Document_Revisions {
 		@header( "Last-Modified: $last_modified GMT" );
 		@header( 'ETag: ' . $etag );
 
-		// WSU Hotfix
-		// See https://github.com/washingtonstateuniversity/wp-document-revisions/pull/2
-		// @header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + 100000000 ) . ' GMT' );
+		/*
+		 * WSU Hotfix
+		 * See https://github.com/washingtonstateuniversity/wp-document-revisions/pull/2
+		 * @header( 'Expires: ' . gmdate( 'D, d M Y H:i:s', time() + 100000000 ) . ' GMT' );
+		 */
 
 		// Support for Conditional GET
 		$client_etag = isset( $_SERVER['HTTP_IF_NONE_MATCH'] ) ? stripslashes( $_SERVER['HTTP_IF_NONE_MATCH'] ) : false;
@@ -1882,6 +1886,22 @@ class WP_Document_Revisions {
 
 	}
 
+	/**
+	 * Return an empty excerpt for documents on front end views to avoid leaking
+	 * revision notes.
+	 *
+	 * @param string  $excerpt The original excerpt text associated with a post.
+	 * @param WP_Post $post    The post object.
+	 *
+	 * @return string
+	 */
+	public function empty_excerpt_return( $excerpt, $post ) {
+		if ( 'document' === $post->post_type && ! is_admin() ) {
+			return '';
+		}
+
+		return $excerpt;
+	}
 
 	/**
 	 * Remove nocache headers from document downloads on IE < 8

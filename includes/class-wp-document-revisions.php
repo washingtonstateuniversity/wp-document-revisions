@@ -98,8 +98,7 @@ class WP_Document_Revisions {
 		add_action( 'init', array( &$this, 'edit_flow_support' ), 11 );
 		add_action( 'init', array( &$this, 'use_workflow_states' ), 50 );
 
-		// WSU Hotfix: Revision comments are stored as excerpts and should not be output with the_excerpt() by default.
-		add_filter( 'get_the_excerpt', '__return_empty_string' );
+		add_filter( 'get_the_excerpt', array( $this, 'empty_excerpt_return' ), 10, 2 );
 
 		// load front-end features (shortcode, widgets, etc.)
 		include dirname( __FILE__ ) . '/class-wp-document-revisions-front-end.php';
@@ -1887,6 +1886,22 @@ class WP_Document_Revisions {
 
 	}
 
+	/**
+	 * Return an empty excerpt for documents on front end views to avoid leaking
+	 * revision notes.
+	 *
+	 * @param string  $excerpt
+	 * @param WP_Post $post
+	 *
+	 * @return string
+	 */
+	public function empty_excerpt_return( $excerpt, $post ) {
+		if ( 'document' === $post->post_type && ! is_admin() ) {
+			return '';
+		}
+
+		return $excerpt;
+	}
 
 	/**
 	 * Remove nocache headers from document downloads on IE < 8

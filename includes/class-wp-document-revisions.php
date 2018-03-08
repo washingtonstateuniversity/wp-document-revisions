@@ -98,6 +98,9 @@ class WP_Document_Revisions {
 		add_action( 'init', array( &$this, 'edit_flow_support' ), 11 );
 		add_action( 'init', array( &$this, 'use_workflow_states' ), 50 );
 
+		// Revision comments are stored as excerpts and should not be output with the_excerpt() by default.
+		add_filter( 'get_the_excerpt', '__return_empty_string' );
+
 		// load front-end features (shortcode, widgets, etc.)
 		include dirname( __FILE__ ) . '/class-wp-document-revisions-front-end.php';
 		new WP_Document_Revisions_Front_End( $this );
